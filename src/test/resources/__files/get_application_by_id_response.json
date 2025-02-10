@@ -1,0 +1,9 @@
+{
+  "id": "1",
+  "applicantName": "John Doe",
+  "amount": 5000,
+  "currency": "GBP",
+  "term": 12,
+  "status": "approved",
+  "applicationDate": "2025-02-09"
+}

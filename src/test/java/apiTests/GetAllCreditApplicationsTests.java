@@ -1,11 +1,11 @@
 package apiTests;
 
-
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.github.tomakehurst.wiremock.common.ContentTypes.ACCEPT;
+import static com.github.tomakehurst.wiremock.common.ContentTypes.CONTENT_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import io.restassured.RestAssured;
@@ -16,20 +16,10 @@ import org.junit.Before;
 import org.junit.Test;
 import java.util.List;
 import java.util.Map;
-import static wiremock.com.google.common.net.HttpHeaders.ACCEPT;
-import static wiremock.com.google.common.net.HttpHeaders.CONTENT_TYPE;
 
-public class WireMockJUnit4Tests extends AbstractTestBase {
+public class GetAllCreditApplicationsTests extends AbstractTestBase {
 
-    protected WireMockServer mWireMockServer;
-    String requestBody = """
-                {
-                    "applicantName": "Alice Brown",
-                    "amount": 7500,
-                    "currency": "GBP",
-                    "term": 18
-                }
-                """.trim();
+    static WireMockServer mWireMockServer;
 
     @Before
     public void setup() {
@@ -46,58 +36,63 @@ public class WireMockJUnit4Tests extends AbstractTestBase {
     }
 
     private void setupStubs() {
-
         mWireMockServer.givenThat(
-                WireMock.get("/test/credit-applications")
-                        .withHeader(ACCEPT, containing("application/json"))
-                        .willReturn(aResponse()
-                                .withStatus(200)
-                                .withBodyFile("get_all_applications_response.json")
-                                .withHeader(CONTENT_TYPE, "application/json")
-                        )
+            WireMock.post("/test/credit-applications")
+                .withHeader(ACCEPT, containing("application/json"))
+                .withRequestBody(equalToJson(
+                    """
+                       {
+                          "customerId": "1234"
+                       }
+                    """.trim()))
+                .willReturn(aResponse()
+                    .withStatus(200)
+                    .withBodyFile("get_all_applications_response.json")
+                    .withHeader(CONTENT_TYPE, "application/json")
+                )
         );
 
         mWireMockServer.givenThat(
-                WireMock.get("/test/credit-applications/1")
-                        .withHeader(ACCEPT, containing("application/json"))
-                        .willReturn(aResponse()
-                                .withStatus(200)
-                                .withBodyFile("get_application_by_id_response.json")
-                                .withHeader(CONTENT_TYPE, "application/json")
-                        )
-        );
-
-        mWireMockServer.givenThat(
-                WireMock.post("/test/credit-applications")
-                        .withHeader(CONTENT_TYPE, containing("application/json"))
-                        .withRequestBody(equalToJson(requestBody))
-                        .willReturn(aResponse()
-                                .withStatus(201)
-                                .withBodyFile("post_application_response.json")
-                                .withHeader(CONTENT_TYPE, "application/json")
-                        )
+            WireMock.post("/test/credit-applications")
+                .withHeader(ACCEPT, containing("application/json"))
+                .withRequestBody(equalToJson(
+                    """
+                       {
+                          "customerId": "5678"
+                       }
+                    """.trim()))
+                .willReturn(aResponse()
+                    .withStatus(404)
+                    .withBodyFile("applications_not_found_response.json")
+                    .withHeader(CONTENT_TYPE, "application/json")
+                )
         );
     }
 
     @Test
     public void matchGetAllApplicationsRequestAndResponse() {
-        // Perform the HTTP request using RestAssured
         final Response response = RestAssured
-                .given()
-                .accept(ContentType.JSON)
-                .when()
-                .get("/test/credit-applications");
+            .given()
+            .accept(ContentType.JSON)
+            .body(
+                """
+                    {
+                        "customerId": "1234"
+                    }
+                """.trim()
+            )
+            .when()
+            .post("/test/credit-applications");
 
-        // Validate the response
         response.then().statusCode(200).contentType(ContentType.JSON);
 
-        // Verify the elements in the creditApplications array
         List<Map<String, Object>> creditApplications = response.jsonPath().getList("creditApplications");
         assertThat(creditApplications, notNullValue());
         Map<String, Object> id1Application = creditApplications.stream()
-                .filter(app -> "1".equals(app.get("id")))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("Application with id: 1 was not found"));
+            .filter(app -> "1" .equals(app.get("creditApplicationId")))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Application not found"));
+        assertThat(id1Application.get("customerId"), is("1234"));
         assertThat(id1Application.get("applicantName"), is("John Doe"));
         assertThat(id1Application.get("amount"), is(5000));
         assertThat(id1Application.get("currency"), is("GBP"));
@@ -106,10 +101,11 @@ public class WireMockJUnit4Tests extends AbstractTestBase {
         assertThat(id1Application.get("applicationDate"), is("2025-02-09"));
 
         Map<String, Object> id2Application = creditApplications.stream()
-                .filter(app -> "2".equals(app.get("id")))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("Application with id: 2 was not found"));
-        assertThat(id2Application.get("applicantName"), is("Jane Smith"));
+            .filter(app -> "2" .equals(app.get("creditApplicationId")))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("Application not found"));
+        assertThat(id2Application.get("customerId"), is("1234"));
+        assertThat(id2Application.get("applicantName"), is("John Doe"));
         assertThat(id2Application.get("amount"), is(10000));
         assertThat(id2Application.get("currency"), is("GBP"));
         assertThat(id2Application.get("term"), is(24));
@@ -118,52 +114,24 @@ public class WireMockJUnit4Tests extends AbstractTestBase {
     }
 
     @Test
-    public void matchGetApplicationByIdRequestAndResponse() {
-        // Perform the HTTP request using RestAssured
+    public void matchGetAllApplicationsRequestAndResponseNotFound() {
         final Response response = RestAssured
-                .given()
-                .accept(ContentType.JSON)
-                .when()
-                .get("/test/credit-applications/1");
+            .given()
+            .accept(ContentType.JSON)
+            .body(
+                """
+                   {
+                      "customerId": "5678"
+                   }
+                """.trim()
+            )
+            .when()
+            .post("/test/credit-applications");
 
-        // Validate the response
-        response.then().statusCode(200).contentType(ContentType.JSON);
-
-        // Verify the elements in the creditApplications array
-        Map<String, Object> creditApplication = response.jsonPath().getMap("");
-        assertThat(creditApplication, notNullValue());
-        assertThat(creditApplication.get("id"), is("1"));
-        assertThat(creditApplication.get("applicantName"), is("John Doe"));
-        assertThat(creditApplication.get("amount"), is(5000));
-        assertThat(creditApplication.get("currency"), is("GBP"));
-        assertThat(creditApplication.get("term"), is(12));
-        assertThat(creditApplication.get("status"), is("approved"));
-        assertThat(creditApplication.get("applicationDate"), is("2025-02-09"));
-    }
-
-    @Test
-    public void matchPostApplicationRequestAndResponse() {
-
-        // Perform the HTTP request using RestAssured
-        final Response response = RestAssured
-                .given()
-                .contentType(ContentType.JSON)
-                .body(requestBody)
-                .when()
-                .post("/test/credit-applications");
-
-        // Validate the response
-        response.then().statusCode(201).contentType(ContentType.JSON);
-
-        // Verify the elements in the creditApplications array
-        Map<String, Object> creditApplication = response.jsonPath().getMap("");
-        assertThat(creditApplication, notNullValue());
-        assertThat(creditApplication.get("id"), is("3"));
-        assertThat(creditApplication.get("applicantName"), is("Alice Brown"));
-        assertThat(creditApplication.get("amount"), is(7500));
-        assertThat(creditApplication.get("currency"), is("GBP"));
-        assertThat(creditApplication.get("term"), is(18));
-        assertThat(creditApplication.get("status"), is("pending"));
-        assertThat(creditApplication.get("applicationDate"), is("2025-02-07"));
-    }
+            response.then().statusCode(404).contentType(ContentType.JSON);
+            Map<String, Object> errorResponse = response.jsonPath().getMap("");
+            assertThat(errorResponse, notNullValue());
+            assertThat(errorResponse.get("errorMessage"), is("No applications found for this customer"));
+            assertThat(errorResponse.get("errorCode"), is("NOT_FOUND"));
+        }
 }

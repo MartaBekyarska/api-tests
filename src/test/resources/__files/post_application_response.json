@@ -1,0 +1,9 @@
+{
+  "id": "3",
+  "applicantName": "Alice Brown",
+  "amount": 7500,
+  "currency": "GBP",
+  "term": 18,
+  "status": "pending",
+  "applicationDate": "2025-02-07"
+}

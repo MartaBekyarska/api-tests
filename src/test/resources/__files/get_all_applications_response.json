@@ -1,20 +1,24 @@
 {
   "creditApplications": [
     {
-      "id": "1",
+      "creditApplicationId": "1",
+      "customerId": "1234",
       "applicantName": "John Doe",
       "amount": 5000,
       "currency": "GBP",
+      "term": 12,
       "status": "approved",
-      "applicationDate": "2023-01-15"
+      "applicationDate": "2025-02-09"
     },
     {
-      "id": "2",
-      "applicantName": "Jane Smith",
+      "creditApplicationId": "2",
+      "customerId": "1234",
+      "applicantName": "John Doe",
       "amount": 10000,
       "currency": "GBP",
+      "term": 24,
       "status": "pending",
-      "applicationDate": "2023-02-20"
+      "applicationDate": "2025-02-08"
     }
   ]
 }
