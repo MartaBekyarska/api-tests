@@ -1,0 +1,20 @@
+{
+  "creditApplications": [
+    {
+      "id": "1",
+      "applicantName": "John Doe",
+      "amount": 5000,
+      "currency": "GBP",
+      "status": "approved",
+      "applicationDate": "2023-01-15"
+    },
+    {
+      "id": "2",
+      "applicantName": "Jane Smith",
+      "amount": 10000,
+      "currency": "GBP",
+      "status": "pending",
+      "applicationDate": "2023-02-20"
+    }
+  ]
+}
